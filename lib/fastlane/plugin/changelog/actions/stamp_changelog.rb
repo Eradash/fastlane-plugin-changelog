@@ -68,27 +68,25 @@ module Fastlane
           previous_previous_tag = ""
 
           if last_line.include? 'https://github.com' or last_line.include? 'http://gitlab'# GitHub uses compare/olderTag...newerTag structure
-            previous_previous_tag = %r{(?<=compare\/)(.*)?(?=\.{3})}.match(last_line)
-            previous_tag = /(?<=\.{3})(.*)?/.match(last_line)
+            previous_previous_tag = %r{(?<=compare\/)(.*)?(?=\.{3})}.match(last_line).to_s
+            previous_tag = /(?<=\.{3})(.*)?/.match(last_line).to_s
           elsif last_line.include? 'https://bitbucket.org' # Bitbucket uses compare/newerTag..olderTag structure
-            previous_tag = %r{(?<=compare\/)(.*)?(?=\.{2})}.match(last_line)
-            previous_previous_tag = /(?<=\.{2})(.*)?/.match(last_line)
+            previous_tag = %r{(?<=compare\/)(.*)?(?=\.{2})}.match(last_line).to_s
+            previous_previous_tag = /(?<=\.{2})(.*)?/.match(last_line).to_s
           end
 
-          # Replace section identifier
-          cleared_git_tag = git_tag.delete('[a-z]')
-          cleared_previous_git_tag = previous_tag.to_s.delete('[a-z]')
-          last_line.sub!("[#{cleared_previous_git_tag}]", "[#{cleared_git_tag}]")
+          new_last_line = last_line
 
-          # Replace previous-previous tag with previous
-          last_line.sub!(previous_previous_tag.to_s, previous_tag.to_s)
-
-          # Replace previous tag with new
-          last_line.sub!("..#{previous_tag}", "..#{git_tag}")
-
-          UI.message("Created a link for comparison between #{previous_tag} and #{git_tag} tag")
+          last_line.sub!("..HEAD", "..#{git_tag}")
+          last_line.sub!("[Unreleased]", "[#{git_tag.delete('[a-z]')}")
 
           file_content.concat(last_line)
+
+          new_last_line.sub!("#{previous_previous_tag}..", "#{git_tag}..")
+
+          file_content.concat(new_last_line)
+
+          UI.message("Created a link for comparison between #{previous_tag} and #{git_tag} tag")
         end
 
         # 4. Write updated content to file
